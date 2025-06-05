@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphiti Memory Chat & Neo4j Visualizer</title>
+    <link rel="stylesheet" href="chat.css">
+    <script type="text/javascript" src="https://unpkg.com/vis-network/dist/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vis-network/dist/vis-network.min.css" type="text/css" />
+</head>
+<body>
+<div class="main-container">
+    <aside class="neo4j-sidebar">
+        <div class="neo4j-header">
+            <h2>知识图谱</h2>
+        </div>
+        <div id="neo4j-graph" class="neo4j-graph-container">
+            <div class="graph-placeholder" id="graph-loading">
+                <p>加载知识图谱中...</p>
+                <div class="spinner"></div>
+            </div>
+        </div>
+        <div class="neo4j-controls">
+            <button id="refresh-graph-btn">刷新图谱</button>
+            <select id="session-selector">
+                <option value="">选择会话查看图谱</option>
+            </select>
+        </div>
+    </aside>
+
+    <div class="chat-container">
+        <header class="chat-header">
+            <div class="header-content">
+                <h1>Graphiti Memory Chat</h1>
+                <button id="new-chat-btn" class="new-chat-btn">新对话</button>
+            </div>
+        </header>
+
+        <main class="chat-main">
+            <div id="chat-messages" class="chat-messages">
+                <div class="message assistant-message">
+                    <div class="message-avatar">
+                        <div class="avatar assistant-avatar">AI</div>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">
+                            您好！我是您的AI助手，有什么我可以帮助您的吗？
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loading-indicator" class="loading-indicator" style="display: none;">
+                <div class="message assistant-message">
+                    <div class="message-avatar">
+                        <div class="avatar assistant-avatar">AI</div>
+                    </div>
+                    <div class="message-content">
+                        <div class="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="chat-footer">
+            <div class="input-container">
+                <div class="input-wrapper">
+                            <textarea
+                                    id="message-input"
+                                    placeholder="输入您的消息..."
+                                    rows="1"
+                                    maxlength="2000"></textarea>
+                    <button id="send-btn" class="send-btn" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span class="char-count">0/2000</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<script src="chat.js"></script>
+</body>
+</html>
