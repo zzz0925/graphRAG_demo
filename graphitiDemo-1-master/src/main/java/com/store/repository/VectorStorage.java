@@ -1,9 +1,9 @@
 package com.store.repository;
 
-
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.store.entiry.ElasticVectorData;
 import com.store.entiry.EmbeddingResult;
 import lombok.AllArgsConstructor;
@@ -12,8 +12,7 @@ import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.*;
 import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
-import org.springframework.data.elasticsearch.core.query.IndexQuery;
-import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
+import org.springframework.data.elasticsearch.core.query.*;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -25,6 +24,7 @@ import java.util.*;
 public class VectorStorage {
 
     final ElasticsearchTemplate elasticsearchTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public String getCollectionName(){
         //演示效果使用，固定前缀+日期
@@ -70,8 +70,157 @@ public class VectorStorage {
         log.info("保存向量成功-size:{}", size);
     }
 
-    public String retrieval(String collectionName,double[] vector){
+    /**
+     * 使用余弦相似性算法进行向量检索
+     * @param collectionName 集合名称
+     * @param vector 查询向量
+     * @return 最相似的内容
+     */
+    public String retrieval(String collectionName, double[] vector) {
+        return retrieval(collectionName, vector, 1);
+    }
 
+    /**
+     * 使用余弦相似性算法进行向量检索
+     * @param collectionName 集合名称
+     * @param vector 查询向量
+     * @param topK 返回前K个结果
+     * @return 最相似的内容列表
+     */
+    public List<String> retrievalTopK(String collectionName, double[] vector, int topK) {
+        try {
+            log.info("开始向量检索, collection: {}, vector维度: {}, topK: {}",
+                    collectionName, vector.length, topK);
+
+            // 构建余弦相似性脚本查询的JSON
+            String scriptSource = "cosineSimilarity(params.query_vector, 'vector') + 1.0";
+
+            // 构建查询JSON字符串
+            StringBuilder queryBuilder = new StringBuilder();
+            queryBuilder.append("{");
+            queryBuilder.append("\"script_score\": {");
+            queryBuilder.append("\"query\": { \"match_all\": {} },");
+            queryBuilder.append("\"script\": {");
+            queryBuilder.append("\"source\": \"").append(scriptSource).append("\",");
+            queryBuilder.append("\"params\": {");
+            queryBuilder.append("\"query_vector\": [");
+            for (int i = 0; i < vector.length; i++) {
+                queryBuilder.append(vector[i]);
+                if (i < vector.length - 1) {
+                    queryBuilder.append(",");
+                }
+            }
+            queryBuilder.append("]");
+            queryBuilder.append("}");
+            queryBuilder.append("}");
+            queryBuilder.append("}");
+            queryBuilder.append("}");
+
+            // 使用StringQuery
+            org.springframework.data.elasticsearch.core.query.Query query =
+                    new org.springframework.data.elasticsearch.core.query.StringQuery(queryBuilder.toString());
+
+            // 设置分页
+            query.setPageable(org.springframework.data.domain.PageRequest.of(0, topK));
+
+            // 设置源字段过滤
+            query.addSourceFilter(new org.springframework.data.elasticsearch.core.query.FetchSourceFilter(
+                    new String[]{"content", "chunkId"},
+                    new String[]{"vector"}
+            ));
+
+            // 执行搜索
+            SearchHits<ElasticVectorData> searchHits = elasticsearchTemplate.search(
+                    query,
+                    ElasticVectorData.class,
+                    IndexCoordinates.of(collectionName)
+            );
+
+            List<String> results = new ArrayList<>();
+
+            if (searchHits.hasSearchHits()) {
+                for (SearchHit<ElasticVectorData> hit : searchHits.getSearchHits()) {
+                    ElasticVectorData data = hit.getContent();
+                    if (data != null && data.getContent() != null) {
+                        results.add(data.getContent());
+                        log.debug("找到相似内容, score: {}, chunkId: {}, content: {}",
+                                hit.getScore(),
+                                data.getChunkId(),
+                                data.getContent().length() > 100 ?
+                                        data.getContent().substring(0, 100) + "..." : data.getContent());
+                    }
+                }
+            }
+
+            log.info("向量检索完成, 返回结果数量: {}", results.size());
+            return results;
+
+        } catch (Exception e) {
+            log.error("向量检索发生错误, collection: {}, error: {}", collectionName, e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 返回单个最相似的结果
+     */
+    public String retrieval(String collectionName, double[] vector, int topK) {
+        List<String> results = retrievalTopK(collectionName, vector, topK);
+        return results.isEmpty() ? "" : results.get(0);
+    }
+
+    /**
+     * 使用Spring Data Elasticsearch的方式进行检索（备用方案）
+     */
+    public String retrievalWithSpringData(String collectionName, double[] vector) {
+        try {
+            log.info("开始向量检索(Spring Data方式), collection: {}, vector维度: {}",
+                    collectionName, vector.length);
+
+            // 构建余弦相似性脚本
+            String scriptSource = "cosineSimilarity(params.query_vector, 'vector') + 1.0";
+            Map<String, Object> params = new HashMap<>();
+            params.put("query_vector", vector);
+
+            // 创建脚本
+            //Script script = new Script(ScriptType.INLINE, "painless", scriptSource, params);
+
+            // 构建查询 - 使用传统方式
+            org.springframework.data.elasticsearch.core.query.Query query =
+                    new org.springframework.data.elasticsearch.core.query.StringQuery("{"
+                            + "\"script_score\": {"
+                            + "  \"query\": { \"match_all\": {} },"
+                            + "  \"script\": {"
+                            + "    \"source\": \"" + scriptSource + "\","
+                            + "    \"params\": " + objectMapper.writeValueAsString(params)
+                            + "  }"
+                            + "}"
+                            + "}");
+
+            // 设置分页
+            query.setPageable(org.springframework.data.domain.PageRequest.of(0, 1));
+
+            // 执行搜索
+            SearchHits<ElasticVectorData> searchHits = elasticsearchTemplate.search(
+                    query,
+                    ElasticVectorData.class,
+                    IndexCoordinates.of(collectionName)
+            );
+
+            if (searchHits.hasSearchHits()) {
+                SearchHit<ElasticVectorData> hit = searchHits.getSearchHits().get(0);
+                ElasticVectorData data = hit.getContent();
+                log.info("找到最相似内容, score: {}, chunkId: {}", hit.getScore(), data.getChunkId());
+                return data.getContent();
+            } else {
+                log.warn("未找到相似内容");
+                return "";
+            }
+
+        } catch (Exception e) {
+            log.error("向量检索失败, collection: {}, error: {}", collectionName, e.getMessage(), e);
+            return "";
+        }
     }
 
     private Map<String, Object> elasticMapping(int dims) {
@@ -86,5 +235,4 @@ public class VectorStorage {
         root.put("properties", properties);
         return root;
     }
-
 }
