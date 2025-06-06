@@ -3,6 +3,7 @@ package com.store.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.ContentType;
 import cn.hutool.http.Header;
@@ -156,6 +157,35 @@ public class VectorStoreImpl implements VectorStore {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+    @Override
+    public EmbeddingResult embedding(String sentence){
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                .connectTimeout(20000, TimeUnit.MILLISECONDS)
+                .readTimeout(20000, TimeUnit.MILLISECONDS)
+                .writeTimeout(20000, TimeUnit.MILLISECONDS)
+                .addInterceptor(new ZhipuHeaderInterceptor(zpKey));
+        OkHttpClient okHttpClient = builder.build();
+        EmbeddingResult embedRequest=new EmbeddingResult();
+        embedRequest.setPrompt(sentence);// 智谱embedding
+        embedRequest.setRequestId(RandomUtil.randomString(8));
+        Request request = new Request.Builder()
+                .url(zpUrl)
+                .post(RequestBody.create(GSON.toJson(embedRequest), MediaType.get(ContentType.JSON.getValue())))
+                .build();
+        try {
+            Response response= okHttpClient.newCall(request).execute();
+            String result=response.body().string();
+            System.out.println("result: "+result);
+            ZhipuResult zhipuResult= GSON.fromJson(result, ZhipuResult.class);
+            EmbeddingResult ret= zhipuResult.getData();
+            ret.setPrompt(embedRequest.getPrompt());
+            ret.setRequestId(embedRequest.getRequestId());
+            return  ret;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
     }
     @AllArgsConstructor
     private static class ZhipuHeaderInterceptor implements Interceptor {

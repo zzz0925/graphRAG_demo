@@ -10,6 +10,9 @@ import com.chat.entity.ChatMessage;
 import com.chat.entity.ChatSession;
 import com.chat.repository.ChatMessageRepository;
 import com.chat.repository.ChatSessionRepository;
+import com.store.entiry.EmbeddingResult;
+import com.store.repository.VectorStorage;
+import com.store.service.VectorStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,9 +34,14 @@ public class ChatServiceImpl {
     private final ModelServiceImpl modelServiceImpl;
     private final GraphitiServiceImpl graphitiServiceImpl;
     private final Neo4jServiceImpl neo4JServiceImpl;
-
+    private final VectorStore vectorStore;
+    private final VectorStorage vectorStorage;
     @Transactional
     public ChatResponse processChat(ChatRequest request) {
+        if(null == request.getMessage()||null == request){
+            log.error("消息内容不能为空");
+            return ChatResponse.error("消息内容不能为空");
+        }
         try {
             // 获取或创建会话
             ChatSession session = getOrCreateSession(request.getSessionId());
@@ -46,7 +54,12 @@ public class ChatServiceImpl {
             // 保存后，确保 userMessage 对象包含了数据库生成的 createdTime
             userMessage = messageRepository.save(userMessage);
 
-            //TODO：在这里可以生成回复，可以检索知识图谱中的内容，作为补充
+            //TODO：在这里可以生成回复，可以检索知识图谱中的内容，作为补充；也可以做向量检索
+            String queryStr = request.getMessage();
+            EmbeddingResult embedding = vectorStore.embedding(queryStr);
+            List<String> vecResponse = vectorStorage.retrievalTopK(vectorStorage.getCollectionName(), embedding.getEmbedding(), 5);
+
+
 
             // 调用模型生成回复
             String modelResponse = modelServiceImpl.generateResponse(request.getMessage());

@@ -22,6 +22,7 @@ public class QueryServiceImpl implements QueryService {
     @Override
     public String queryDb(String query) {
         //通过语义检索
+
         return "";
     }
 }
