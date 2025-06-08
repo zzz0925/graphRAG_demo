@@ -14,6 +14,7 @@ import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.data.elasticsearch.core.query.*;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.*;
@@ -143,11 +144,6 @@ public class VectorStorage {
                     ElasticVectorData data = hit.getContent();
                     if (data != null && data.getContent() != null) {
                         results.add(data.getContent());
-                        log.debug("找到相似内容, score: {}, chunkId: {}, content: {}",
-                                hit.getScore(),
-                                data.getChunkId(),
-                                data.getContent().length() > 100 ?
-                                        data.getContent().substring(0, 100) + "..." : data.getContent());
                     }
                 }
             }
@@ -210,7 +206,7 @@ public class VectorStorage {
             if (searchHits.hasSearchHits()) {
                 SearchHit<ElasticVectorData> hit = searchHits.getSearchHits().get(0);
                 ElasticVectorData data = hit.getContent();
-                log.info("找到最相似内容, score: {}, chunkId: {}", hit.getScore(), data.getChunkId());
+                //log.info("找到最相似内容, score: {}, chunkId: {}", hit.getScore(), data.getChunkId());
                 return data.getContent();
             } else {
                 log.warn("未找到相似内容");

@@ -1,4 +1,3 @@
-// graphitiDemo/src/main/java/com/chat/service/ChatService.java
 package com.chat.service.impl;
 
 import com.chat.config.promptConfig;
@@ -13,8 +12,11 @@ import com.chat.repository.ChatSessionRepository;
 import com.store.entiry.EmbeddingResult;
 import com.store.repository.VectorStorage;
 import com.store.service.VectorStore;
+import com.store.service.impl.VectorStoreImpl;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +27,7 @@ import java.util.UUID;
 import java.util.stream.Collectors; // 用于流操作
 
 @Service
-@RequiredArgsConstructor
+@AllArgsConstructor
 @Slf4j
 public class ChatServiceImpl {
 
@@ -58,11 +60,15 @@ public class ChatServiceImpl {
             String queryStr = request.getMessage();
             EmbeddingResult embedding = vectorStore.embedding(queryStr);
             List<String> vecResponse = vectorStorage.retrievalTopK(vectorStorage.getCollectionName(), embedding.getEmbedding(), 5);
+            //将向量检索和图检索结果合并，传给大模型生成回复
+            //调用模型生成查询cypher
+            String queryPrompt = promptConfig.configPrompt("QUERY", queryStr);
+            String queryCypher = modelServiceImpl.generateResponse(queryPrompt);
+            String graphResponse = graphQuery(queryCypher);
 
-
-
+            String response = "用户问题："+request.getMessage()  +"，图谱结果："+ graphResponse + " ，向量检索结果：" + vecResponse.toString();
             // 调用模型生成回复
-            String modelResponse = modelServiceImpl.generateResponse(request.getMessage());
+            String modelResponse = modelServiceImpl.generateResponse(response);
 
             // 保存助手回复
             ChatMessage assistantMessage = new ChatMessage();
@@ -74,7 +80,7 @@ public class ChatServiceImpl {
 
             //TODO：将该轮对话传入大模型，提取出实体和关系，并更新到neo4j数据库中
             String query = "user: " + request.getMessage() + " assistant: " + modelResponse;
-            String prompt = promptConfig.configPrompt(query);
+            String prompt = promptConfig.configPrompt("MERGE",query);
             String modelQuery = modelServiceImpl.generateResponse(prompt);
             //提取模型输出的cypher语句
             graphExtract(modelQuery);
@@ -89,7 +95,16 @@ public class ChatServiceImpl {
             return ChatResponse.error("处理请求时发生错误，请稍后重试");
         }
     }
-
+    private String graphQuery(String query){
+        try{
+            log.info("模型输出的cypher:{}",query);
+            String result = neo4JServiceImpl.queryGraph(query);
+            return result;
+        }catch (Exception e) {
+            log.error("图谱实体提取出错: ", e);
+        }
+        return "";
+    }
     private void graphExtract(String modelQuery) {
         new Thread(()->{
             try{

@@ -10,6 +10,12 @@ class ChatApp {
         this.attachEventListeners();
         this.loadChatHistory();
         this.initNeo4jViz(); // 初始化 Neo4j 可视化
+        this.fileInput = document.createElement('input');
+        this.fileInput.type = 'file';
+        this.fileInput.accept = '.txt,.pdf';
+        this.fileInput.style.display = 'none';
+        document.body.appendChild(this.fileInput);
+        this.attachFileUploadEventListeners();
     }
 
     initializeElements() {
@@ -21,6 +27,7 @@ class ChatApp {
         this.charCount = document.querySelector('.char-count');
         this.refreshGraphBtn = document.getElementById('refresh-graph-btn'); // 新增刷新按钮
         this.sessionSelector = document.getElementById('session-selector'); // 新增会话选择器
+        this.uploadBtn = document.getElementById('upload-btn');
     }
 
     attachEventListeners() {
@@ -67,7 +74,45 @@ class ChatApp {
                 this.neo4jViz.loadGraphData(); // 加载所有图
             }
         });
+
+        this.uploadBtn.addEventListener('click', () => {
+           this.fileInput.click();
+        });
     }
+    //------------------------------------------新增方法----------
+    attachFileUploadEventListeners() {
+        this.fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const fileName = file.name
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    this.showLoading();
+
+                    const response = await fetch('http://localhost:8080/api/vector/doc2Vec', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    this.addMessageToUI('assistant', `File processed successfully: ${JSON.stringify(result)}`);
+
+                } catch (error) {
+                    console.error('文件上传错误:', error);
+                    this.showError('文件上传失败，请重试');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+        });
+    }
+    //----------------------
     updateSendButton() {
             const hasContent = this.messageInput.value.trim().length > 0;
             this.sendBtn.disabled = !hasContent || this.isLoading;

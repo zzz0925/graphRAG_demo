@@ -6,7 +6,6 @@ import com.store.entiry.EmbeddingResult;
 import java.util.List;
 
 public interface VectorStore {
-    List<ChunkResult> chunk(String doc);
     List<EmbeddingResult> embedding(List<ChunkResult> chunks);
     EmbeddingResult embedding(String chunks);
     void store(List<EmbeddingResult> embeddings);

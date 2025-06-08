@@ -1,6 +1,7 @@
 package com.store.utils;
 
 import cn.hutool.jwt.JWTUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -11,6 +12,8 @@ import java.util.Map;
  * 2023/10/06 13:42
  * @since llm_chat_java_hello
  */
+
+@Slf4j
 public class LLMUtils {
 
 
@@ -27,7 +30,7 @@ public class LLMUtils {
         if (parts.length != 2) {
             throw new RuntimeException("智谱invalid key");
         }
-
+        log.info("apiKey:{}",apiKey);
         String id = parts[0];
         String secret = parts[1];
         // 4143f0fa36f0aaf39a63be11a3623c63.eMhlXYJLdUGQO0xH

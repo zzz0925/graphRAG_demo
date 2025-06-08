@@ -1,10 +1,7 @@
 package com.store.service.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.ContentType;
 import cn.hutool.http.Header;
 import com.store.entiry.ChunkResult;
@@ -14,29 +11,24 @@ import com.store.repository.VectorStorage;
 import com.store.service.VectorStore;
 import com.store.utils.LLMUtils;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.io.IOUtils;
-import org.apache.pdfbox.io.RandomAccessReadBuffer;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+
 import com.google.gson.Gson;
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class VectorStoreImpl implements VectorStore {
 
     @Autowired
@@ -48,73 +40,6 @@ public class VectorStoreImpl implements VectorStore {
     private String zpKey;
     @Value("${llm.zp-url}")
     private String zpUrl;
-    @Override
-    public List<ChunkResult> chunk(String doc) {
-        if(doc.endsWith(".pdf")){
-            return chunkPDF(doc);
-        }else if(doc.endsWith(".txt")){
-            return chunkTxt(doc);
-        }else {
-            log.error("不支持的文件类型: {}", doc);
-        }
-        return new ArrayList<>();
-    }
-
-    public List<ChunkResult> chunkPDF(String doc){
-        String path = "data/" + doc;
-        log.info("start chunk---> doc:{}, path:{}", doc, path);
-        ClassPathResource classPathResource = new ClassPathResource(path);
-        try {
-            // 利用 PDFBox 读取 PDF 文档
-            RandomAccessReadBuffer rarBuffer = new RandomAccessReadBuffer(IOUtils.toByteArray(classPathResource.getInputStream()));
-            PDDocument document = Loader.loadPDF(rarBuffer);
-            PDFTextStripper stripper = new PDFTextStripper();
-            String text = stripper.getText(document);
-            document.close();
-
-            // 按固定字数分割，例如每256个字符一块
-            String[] chunks = StrUtil.split(text, 256);
-            log.info("chunk size: {}", ArrayUtil.length(chunks));
-            List<ChunkResult> results = new ArrayList<>();
-            AtomicInteger atomicInteger = new AtomicInteger(0);
-            for (String chunk : chunks) {
-                ChunkResult chunkResult = new ChunkResult();
-                chunkResult.setDocId(doc);
-                chunkResult.setContent(chunk);
-                chunkResult.setChunkId(atomicInteger.incrementAndGet());
-                results.add(chunkResult);
-            }
-            return results;
-        } catch (IOException e) {
-            log.error("PDF 分块错误: {}", e.getMessage());
-        }
-        return new ArrayList<>();
-    }
-
-    public List<ChunkResult> chunkTxt(String docId){
-        String path="data/"+docId;
-        log.info("start chunk---> docId:{},path:{}",docId,path);
-        ClassPathResource classPathResource=new ClassPathResource(path);
-        try {
-            String txt= IoUtil.read(classPathResource.getInputStream(), StandardCharsets.UTF_8);
-            //按固定字数分割,256
-            String[] lines=StrUtil.split(txt,256);
-            log.info("chunk size:{}", ArrayUtil.length(lines));
-            List<ChunkResult> results=new ArrayList<>();
-            AtomicInteger atomicInteger=new AtomicInteger(0);
-            for (String line:lines){
-                ChunkResult chunkResult=new ChunkResult();
-                chunkResult.setDocId(docId);
-                chunkResult.setContent(line);
-                chunkResult.setChunkId(atomicInteger.incrementAndGet());
-                results.add(chunkResult);
-            }
-            return results;
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-        return new ArrayList<>();
-    }
 
     @Override
     public List<EmbeddingResult> embedding(List<ChunkResult> ChunkResults) {
@@ -148,7 +73,7 @@ public class VectorStoreImpl implements VectorStore {
         try {
             Response response= okHttpClient.newCall(request).execute();
             String result=response.body().string();
-            System.out.println("result: "+result);
+            //System.out.println("result: "+result);
             ZhipuResult zhipuResult= GSON.fromJson(result, ZhipuResult.class);
             EmbeddingResult ret= zhipuResult.getData();
             ret.setPrompt(embedRequest.getPrompt());
@@ -176,7 +101,7 @@ public class VectorStoreImpl implements VectorStore {
         try {
             Response response= okHttpClient.newCall(request).execute();
             String result=response.body().string();
-            System.out.println("result: "+result);
+            //System.out.println("result: "+result);
             ZhipuResult zhipuResult= GSON.fromJson(result, ZhipuResult.class);
             EmbeddingResult ret= zhipuResult.getData();
             ret.setPrompt(embedRequest.getPrompt());
@@ -190,7 +115,9 @@ public class VectorStoreImpl implements VectorStore {
     @AllArgsConstructor
     private static class ZhipuHeaderInterceptor implements Interceptor {
 
+
         final String apiKey;
+
 
         @NotNull
         @Override
@@ -210,6 +137,7 @@ public class VectorStoreImpl implements VectorStore {
     @Override
     public void store(List<EmbeddingResult> chunkResults) {
         String collectionName = vectorStorage.getCollectionName();
+        log.info("storing...... collectionName:{}",collectionName);
         vectorStorage.store(collectionName, chunkResults);
     }
 }

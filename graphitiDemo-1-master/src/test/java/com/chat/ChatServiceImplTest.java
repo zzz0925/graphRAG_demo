@@ -23,7 +23,7 @@ public class ChatServiceImplTest {
     public void test() {
         //TODO：将该轮对话传入大模型，提取出实体和关系，并更新到neo4j数据库中
         String query = "user: " + "我是zzz，目前居住在杭州，你是谁" + " assistant: " + "我是阿里开发的通义千问大模型";
-        String prompt = promptConfig.configPrompt(query);
+        String prompt = promptConfig.configPrompt("MERGE",query);
         String cypher = modelServiceImpl.generateResponse(prompt);
         log.info(cypher);
         //TODO：将CypherList中的语句逐个执行，更新到neo4j数据库中

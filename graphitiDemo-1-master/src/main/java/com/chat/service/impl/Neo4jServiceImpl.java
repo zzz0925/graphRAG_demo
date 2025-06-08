@@ -2,6 +2,8 @@
 package com.chat.service.impl;
 
 import com.chat.dto.GraphData;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Relationship;
@@ -23,6 +25,15 @@ public class Neo4jServiceImpl {
         this.neo4jClient = neo4jClient;
     }
 
+    public String queryGraph(String cypher) throws JsonProcessingException {
+        List<Map<String, Object>> queryResults = (List<Map<String, Object>>)neo4jClient.query(cypher)
+                .fetch()
+                .all();
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonResult = objectMapper.writeValueAsString(queryResults);
+        log.info("queryGraph result: " + jsonResult);
+        return jsonResult;
+    }
     public boolean createNode(String cypher) {
         neo4jClient.query(cypher)
                 .fetch()

@@ -19,6 +19,10 @@ spring:
     password: 619619
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  elasticsearch:
+    uris: http://47.111.10.220:9200
+    username: elastic
+    password: 619619
   jpa:
     hibernate:
       ddl-auto: update
@@ -54,3 +58,10 @@ ai:
   api:
     url: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
     key: sk-02ec84237b354011bbbb41b0ccde6e05
+
+# 自定义配置
+llm:
+  zp-key: 3f99e60b42f147e289371f216974901d.NtwA6W4kY456CDvY
+  zp-url: https://open.bigmodel.cn/api/paas/v3/model-api/text_embedding/invoke
+  ds-key:
+

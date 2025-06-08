@@ -69,11 +69,21 @@
         <footer class="chat-footer">
             <div class="input-container">
                 <div class="input-wrapper">
-                            <textarea
-                                    id="message-input"
-                                    placeholder="输入您的消息..."
-                                    rows="1"
-                                    maxlength="2000"></textarea>
+                    <!-- 修改后的上传按钮，使用加号图标 -->
+                    <button id="upload-btn" class="upload-btn" title="上传文件">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 4V20M4 12H20"
+                                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <input type="file" id="file-input" style="display: none;">
+                    </button>
+
+                    <textarea
+                            id="message-input"
+                            placeholder="输入您的消息..."
+                            rows="1"
+                            maxlength="2000"></textarea>
+
                     <button id="send-btn" class="send-btn" disabled>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
