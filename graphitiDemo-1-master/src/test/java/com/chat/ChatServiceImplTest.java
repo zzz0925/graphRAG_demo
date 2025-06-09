@@ -4,6 +4,7 @@ import com.chat.config.promptConfig;
 import com.chat.service.impl.ChatServiceImpl;
 import com.chat.service.impl.ModelServiceImpl;
 import com.chat.service.impl.Neo4jServiceImpl;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

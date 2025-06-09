@@ -5,6 +5,7 @@ import com.chat.dto.GraphData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Relationship;
 import org.springframework.data.neo4j.core.Neo4jClient;
@@ -26,31 +27,46 @@ public class Neo4jServiceImpl {
     }
 
     public String queryGraph(String cypher) throws JsonProcessingException {
-        List<Map<String, Object>> queryResults = (List<Map<String, Object>>)neo4jClient.query(cypher)
-                .fetch()
-                .all();
+        StringBuilder result = new StringBuilder();
         ObjectMapper objectMapper = new ObjectMapper();
-        String jsonResult = objectMapper.writeValueAsString(queryResults);
-        log.info("queryGraph result: " + jsonResult);
-        return jsonResult;
+        String[] split = cypher.split("(?<=;)");
+        for (String query : split) {
+            log.info("Executing query: " + query);
+            if(query.equals("MERGE (n) RETURN n;")){
+                query.replace("MERGE (n) RETURN n;", "MATCH (n) RETURN n LIMIT 200;");
+            }
+            List<Map<String, Object>> queryResult = (List<Map<String, Object>>)neo4jClient.query(query)
+                    .fetch()
+                    .all();
+            result.append(objectMapper.writeValueAsString(queryResult)).append("\n");
+        }
+        return result.toString();
     }
     public boolean createNode(String cypher) {
-        neo4jClient.query(cypher)
-                .fetch()
-                .all();
+        String[] split = cypher.split("(?<=;)");
+        for (String query : split) {
+            try {
+                neo4jClient.query(query)
+                        .fetch()
+                        .all();
+            }catch (DatabaseException e){
+                log.error("创建节点时，cypher:语法错误 " + query, e);
+            }
+        }
         return true;
     }
     public GraphData getAllGraphData() {
         // 使用 Neo4jClient 执行 Cypher 查询
         List<Map<String, Object>> rawResults = (List<Map<String, Object>>) neo4jClient
-                .query("MATCH (n)-[r]->(m) RETURN n, r, m") // Cypher 查询
+                .query("MATCH (n)-[r]->(m) RETURN n, r, m LIMIT 200") // Cypher 查询
                 .fetch() // 开始获取结果
                 .all(); // 获取所有结果作为 List<Map<String, Object>>
 
+        log.info("图谱整体大小：{}", rawResults.size());
         List<Map<String, Object>> nodes = new ArrayList<>();
         List<Map<String, Object>> relationships = new ArrayList<>();
 
-        Map<Long, Map<String, Object>> uniqueNodes = new HashMap<>();
+        Map<String, Map<String, Object>> uniqueNodes = new HashMap<>();
 
         for (Map<String, Object> row : rawResults) {
             Node nodeN = (Node) row.get("n");
@@ -62,7 +78,7 @@ public class Neo4jServiceImpl {
                 nodeMap.put("id", nodeN.id());
                 nodeMap.put("labels", StreamSupport.stream(nodeN.labels().spliterator(), false).collect(Collectors.toList()));
                 nodeMap.put("properties", nodeN.asMap());
-                uniqueNodes.put(nodeN.id(), nodeMap);
+                uniqueNodes.put(String.valueOf(nodeN.id()), nodeMap);
             }
 
             if (nodeM != null) {
@@ -70,7 +86,7 @@ public class Neo4jServiceImpl {
                 nodeMap.put("id", nodeM.id());
                 nodeMap.put("labels", StreamSupport.stream(nodeM.labels().spliterator(), false).collect(Collectors.toList()));
                 nodeMap.put("properties", nodeM.asMap());
-                uniqueNodes.put(nodeM.id(), nodeMap);
+                uniqueNodes.put(String.valueOf(nodeN.id()), nodeMap);
             }
 
             if (relationshipR != null) {

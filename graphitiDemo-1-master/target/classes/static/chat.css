@@ -256,6 +256,7 @@ body {
 .message-content {
     flex: 1;
     min-width: 0;
+
 }
 
 .message-text {
@@ -440,7 +441,6 @@ body {
     .chat-footer {
         padding: 1rem;
     }
-
     .header-content h1 {
         font-size: 1.25rem;
     }

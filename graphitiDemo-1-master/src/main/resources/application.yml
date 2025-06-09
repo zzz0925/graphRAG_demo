@@ -36,12 +36,19 @@ spring:
       enabled: true
       path: /h2-console
   # Neo4j 配置
+# -----------------------neo4j配置----------
+#  neo4j:
+#    uri: neo4j://localhost:7687 # 你的 Neo4j 实例地址
+#    authentication:
+#      username: neo4j # 你的 Neo4j 用户名
+#      password: zhaopeiyao619 # 你的 Neo4j 密码
 
+# -----------------------gdb配置----------
   neo4j:
-    uri: neo4j://localhost:7687 # 你的 Neo4j 实例地址
+    uri: bolt://gds-m5e5fd18b4hqbn67149870pub.graphdb.rds.aliyuncs.com:3734 # 你的 gdb 实例地址
     authentication:
-      username: neo4j # 你的 Neo4j 用户名
-      password: zhaopeiyao619 # 你的 Neo4j 密码
+      username: zzz # 你的 gdb 用户名
+      password: Zhaopeiyao619 # 你的 gdb 密码
 
 # Graphiti配置
 graphiti:
