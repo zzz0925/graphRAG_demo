@@ -62,7 +62,6 @@ public class Neo4jServiceImpl {
                 .fetch() // 开始获取结果
                 .all(); // 获取所有结果作为 List<Map<String, Object>>
 
-        log.info("图谱整体大小：{}", rawResults.size());
         List<Map<String, Object>> nodes = new ArrayList<>();
         List<Map<String, Object>> relationships = new ArrayList<>();
 

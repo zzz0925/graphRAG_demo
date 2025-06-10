@@ -2,6 +2,7 @@
 package com.chat.controller;
 
 import com.chat.dto.GraphData;
+import com.chat.service.impl.GremlinServiceImpl;
 import com.chat.service.impl.Neo4jServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,11 +19,13 @@ import java.util.Map;
 public class Neo4jController {
 
     private final Neo4jServiceImpl neo4JServiceImpl;
+    private final GremlinServiceImpl gremlinServiceImpl;
 
     @GetMapping("/graph-data")
     public ResponseEntity<GraphData> getGraphData() {
         log.info("Fetching all Neo4j graph data.");
-        GraphData graphData = neo4JServiceImpl.getAllGraphData();
+        //GraphData graphData = neo4JServiceImpl.getAllGraphData();
+        GraphData graphData = gremlinServiceImpl.getAllGraphData();
         return ResponseEntity.ok(graphData);
     }
 

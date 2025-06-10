@@ -4,8 +4,7 @@ server:
 spring:
   application:
     name: chat-application
-
-  # 数据库配置 (H2)
+    # 数据库配置 (H2)
 #    datasource:
 #      url: jdbc:h2:mem:chatdb
 #      driver-class-name: org.h2.Driver
@@ -49,6 +48,15 @@ spring:
     authentication:
       username: zzz # 你的 gdb 用户名
       password: Zhaopeiyao619 # 你的 gdb 密码
+
+#-----------Gremlin配置----------
+gremlin:
+  gdbHost: gds-m5e5fd18b4hqbn67149870pub.graphdb.rds.aliyuncs.com
+  gdbPort: 3734
+  username: zzz
+  password: Zhaopeiyao619
+  cluster:
+    max-content-length: 1048576 # 最大请求体大小，默认100M
 
 # Graphiti配置
 graphiti:

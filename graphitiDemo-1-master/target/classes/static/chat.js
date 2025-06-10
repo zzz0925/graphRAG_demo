@@ -505,14 +505,14 @@ class Neo4jViz {
 
                     // 根据节点类型设置 label 和颜色
                     if (node.labels && node.labels.includes('Conversation')) {
-                        label = `会话: ${node.properties.sessionId}`;
+                        label = `会话: ${node.sessionId}`;
                         color = '#FFD700'; // 会话节点颜色
                     } else if (node.labels && node.labels.includes('Message')) {
-                        label = node.properties.content;
+                        label = node.content;
                         color = '#ADD8E6'; // 消息节点颜色
                     } else {
                         // 如果有其他类型的节点，可以继续添加逻辑
-                        label = node.properties.name || node.id; // 尝试用name属性，否则用id
+                        label = node.name || node.id; // 尝试用name属性，否则用id
                     }
 
                     return {
@@ -527,10 +527,10 @@ class Neo4jViz {
                 const visEdges = graphData.relationships.map(edge => {
                     return {
                         id: edge.id,
-                        from: edge.startNode,
-                        to: edge.endNode,
-                        label: edge.type, // 将关系类型作为边的标签
-                        title: JSON.stringify(edge.properties, null, 2), // 鼠标悬停时显示属性
+                        from: edge.inV,
+                        to: edge.outV,
+                        label: edge.label, // 将关系类型作为边的标签
+                        title: JSON.stringify(edge.pros, null, 2), // 鼠标悬停时显示属性
                         arrows: 'to'
                     };
                 });
