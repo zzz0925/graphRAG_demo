@@ -127,7 +127,6 @@ body {
     transform: translateY(-1px);
 }
 
-
 /* 聊天容器样式 (保持不变，但 flex-basis 调整) */
 .chat-container {
     flex: 1; /* 占据另一半宽度 */
@@ -137,7 +136,6 @@ body {
     backdrop-filter: blur(10px);
 }
 
-/* 原始的 chat.css 其余部分保持不变 */
 /* 头部样式 */
 .chat-header {
     background: rgba(255, 255, 255, 0.9);
@@ -175,6 +173,54 @@ body {
 .new-chat-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* 检索模式选择区域样式 */
+.search-mode-section {
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 1rem 2rem;
+}
+
+.search-mode-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.search-mode-label {
+    font-weight: 500;
+    color: #4a5568;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.search-mode-selector {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    min-width: 120px;
+}
+
+.search-mode-selector:hover {
+    border-color: #667eea;
+}
+
+.search-mode-selector:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-mode-description {
+    flex: 1;
+    color: #666;
+    font-size: 0.8rem;
+    font-style: italic;
 }
 
 /* 聊天消息区域 */
@@ -256,7 +302,6 @@ body {
 .message-content {
     flex: 1;
     min-width: 0;
-
 }
 
 .message-text {
@@ -434,6 +479,20 @@ body {
         padding: 1rem;
     }
 
+    .search-mode-section {
+        padding: 1rem;
+    }
+
+    .search-mode-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .search-mode-selector {
+        width: 100%;
+    }
+
     .chat-messages {
         padding: 1rem;
     }
@@ -441,6 +500,7 @@ body {
     .chat-footer {
         padding: 1rem;
     }
+
     .header-content h1 {
         font-size: 1.25rem;
     }

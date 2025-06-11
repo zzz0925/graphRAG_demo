@@ -36,6 +36,20 @@
             </div>
         </header>
 
+        <!-- 新增检索模式选择区域 -->
+        <div class="search-mode-section">
+            <div class="search-mode-container">
+                <label class="search-mode-label">检索模式：</label>
+                <select id="search-mode-selector" class="search-mode-selector">
+                    <option value="vector">向量检索</option>
+                    <option value="graph">图谱检索</option>
+                </select>
+                <div class="search-mode-description">
+                    <span id="mode-description"></span>
+                </div>
+            </div>
+        </div>
+
         <main class="chat-main">
             <div id="chat-messages" class="chat-messages">
                 <div class="message assistant-message">

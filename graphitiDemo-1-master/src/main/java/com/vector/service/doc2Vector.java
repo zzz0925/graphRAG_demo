@@ -17,19 +17,20 @@ import java.util.List;
 public class doc2Vector {
     private textChunk textChunk;
     private VectorStore vectorStore;
-    public String docVector(String doc){
-        log.info("docVector start...");
-        List<ChunkResult> chunkResults = textChunk.chunk(doc);
-        log.info("chunk complete...");
-        if(null == chunkResults){
-            log.error("chunk result is null");
-            return null;
-        }
-        log.info("embedding start...");
-        List<EmbeddingResult> embedding = vectorStore.embedding(chunkResults);
-        log.info("embedding complete...");
-        vectorStore.store(embedding);
-        log.info("docVector complete...");
-        return "finished docId:{}"+doc;
+    public void docVector(String doc){
+        new Thread(()->{
+            log.info("docVector start...");
+            List<ChunkResult> chunkResults = textChunk.chunk(doc);
+            log.info("chunk complete...");
+            if(null == chunkResults){
+                log.error("chunk result is null");
+                return;
+            }
+            log.info("embedding start...");
+            List<EmbeddingResult> embedding = vectorStore.embedding(chunkResults);
+            log.info("embedding complete...");
+            vectorStore.store(embedding);
+            log.info("docVector complete...");
+        }).start();
     }
 }

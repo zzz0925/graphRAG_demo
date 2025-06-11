@@ -22,6 +22,9 @@ public class GremlinServiceImpl {
     @Autowired
     private Client gremlinClient;
 
+    public GraphData GremlinQuery(String gremlin) {
+        return null;
+    }
     public GraphData getAllGraphData() {
         // 查询 100 个顶点
         String vertexQuery = "g.V().limit(100).valueMap(true)";

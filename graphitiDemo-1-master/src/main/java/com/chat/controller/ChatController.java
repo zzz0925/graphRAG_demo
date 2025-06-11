@@ -29,6 +29,20 @@ public class ChatController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/vector-query")
+    public ResponseEntity<ChatResponse> vectorQuery(@Validated @RequestBody ChatRequest request) {
+        log.info("Received message: {}", request.getMessage());
+        ChatResponse response = chatServiceImpl.processVector(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/graph-query")
+    public ResponseEntity<ChatResponse> graphQuery(@Validated @RequestBody ChatRequest request) {
+        log.info("Received message: {}", request.getMessage());
+        ChatResponse response = chatServiceImpl.processGraph(request);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/history/{sessionId}")
     public ResponseEntity<List<ChatMessage>> getChatHistory(@PathVariable String sessionId) {
         List<ChatMessage> history = chatServiceImpl.getChatHistory(sessionId);

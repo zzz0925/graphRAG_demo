@@ -27,7 +27,7 @@ public class promptConfig {
             "查询关系：输入实体之间的关系类型（Relation Type）、方向、属性（Property）等，查询图数据库中符合条件的关系。\n" +
             "生成 Gremlin 语句：根据上述查询条件，生成一组 Gremlin 查询语句，用于查询图数据库中的数据,尽量避免返回整个图谱。\n" +
             "格式要求：\n" +
-            "Gremlin 语句应使用 MATCH 语句查询图数据库，格式清晰、可执行。并且返回的Gremlin语句要能够直接传入图数据库进行查询！！\n" +
+            "Gremlin 语句应格式清晰、可执行。并且返回的Gremlin语句要能够直接传入图数据库进行查询！！\n" +
             "请只回复Gremlin语句！！不要有任何其他语句！只输出Gremlin查询的结构化结果，每条Gremlin，语句用分号隔开！！！";
     public static String responseTemplate = "请利用如下上下文的信息回答问题：" + "\n" +
             "%s\n" +

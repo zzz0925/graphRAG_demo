@@ -28,6 +28,7 @@ class ChatApp {
         this.refreshGraphBtn = document.getElementById('refresh-graph-btn'); // 新增刷新按钮
         this.sessionSelector = document.getElementById('session-selector'); // 新增会话选择器
         this.uploadBtn = document.getElementById('upload-btn');
+        this.searchModeSelector = document.getElementById('search-mode-selector');
     }
 
     attachEventListeners() {
@@ -101,7 +102,7 @@ class ChatApp {
                     }
 
                     const result = await response.json();
-                    this.addMessageToUI('assistant', `File processed successfully: ${JSON.stringify(result)}`);
+                    this.addMessageToUI('assistant', `文件上传成功，文件名: ${fileName}`);
 
                 } catch (error) {
                     console.error('文件上传错误:', error);
@@ -145,6 +146,7 @@ class ChatApp {
     }
 
     // ... (sendMessage, callChatAPI, addMessageToUI, showLoading, hideLoading, showError, scrollToBottom, clearChatMessages, addWelcomeMessage, saveChatHistory, loadChatHistory, loadMessagesFromServer 保持不变) ...
+
 
     async sendMessage() {
         const message = this.messageInput.value.trim();
@@ -230,14 +232,34 @@ class ChatApp {
             message: message,
             sessionId: this.currentSessionId
         };
+        const queryType = this.searchModeSelector.value;
+        let response;
 
-        const response = await fetch('http://localhost:8080/api/chat/send', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody)
-        });
+        if (queryType === 'vector') {
+            response = await fetch('http://localhost:8080/api/chat/vector-query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message })
+            });
+        } else if (queryType === 'graph') {
+            response = await fetch('http://localhost:8080/api/chat/graph-query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message })
+            });
+        }
+
+            /*const response = await fetch('http://localhost:8080/api/chat/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody)
+            });*/
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -337,7 +359,12 @@ class ChatApp {
             errorDiv.className = 'error-message';
             errorDiv.textContent = '错误: ' + message;
 
-            this.chatMessages.insertBefore(errorDiv, this.loadingIndicator);
+            if (this.chatMessages.contains(this.loadingIndicator)){
+                this.chatMessages.insertBefore(errorDiv, this.loadingIndicator);
+            }else{
+                this.chatMessages.appendChild(errorDiv);
+            }
+
             this.scrollToBottom();
 
             // 5秒后自动移除错误消息
@@ -577,7 +604,7 @@ class Neo4jViz {
                 const nodeId = params.nodes[0];
                 const node = this.nodes.get(nodeId);
                 console.log("Clicked node:", node);
-                // 可以在这里显示节点属性的弹窗或侧边栏
+                // TODO 可以在这里显示节点属性的弹窗或侧边栏
             }
             if (params.edges.length > 0) {
                 const edgeId = params.edges[0];
