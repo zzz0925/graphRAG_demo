@@ -1,6 +1,8 @@
 package com.chat.service.impl;
 
 import com.chat.dto.GraphData;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import groovy.transform.Undefined;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tinkerpop.gremlin.driver.Client;
@@ -22,8 +24,58 @@ public class GremlinServiceImpl {
     @Autowired
     private Client gremlinClient;
 
-    public GraphData GremlinQuery(String gremlin) {
-        return null;
+    /**
+     * 执行单条 Gremlin 语句
+     */
+    public boolean executeSingleGremlin(String gremlinStatement) {
+        try {
+            log.info("执行 Gremlin 语句: {}", gremlinStatement);
+            ResultSet resultSet = gremlinClient.submit(gremlinStatement.trim());
+            resultSet.all().join(); // 等待执行完成
+            log.info("Gremlin 语句执行成功");
+            return true;
+        } catch (Exception e) {
+            log.error("执行 Gremlin 语句失败: {}, 错误: {}", gremlinStatement, e.getMessage());
+            return false;
+        }
+    }
+    /**
+     * 批量执行多条 Gremlin 语句
+     */
+    public List<String> executeBatchGremlin(List<String> gremlinStatements) {
+        List<String> failedStatements = new ArrayList<>();
+
+        for (String statement : gremlinStatements) {
+            if (!statement.trim().isEmpty()) {
+                boolean success = executeSingleGremlin(statement);
+                if (!success) {
+                    failedStatements.add(statement);
+                }
+            }
+        }
+
+        log.info("批量执行完成，失败语句数量: {}", failedStatements.size());
+        return failedStatements;
+    }
+    public String GremlinQuery(String gremlin) {
+        ResultSet submit = gremlinClient.submit(gremlin);
+        log.info("Gremlin Query: {}", gremlin);
+        return resultSetToJsonString(submit);
+    }
+    public String resultSetToJsonString(ResultSet resultSet) {
+        try {
+            List<Result> results = resultSet.all().join();
+            List<Object> objects = results.stream()
+                    .map(Result::getObject)
+                    .collect(Collectors.toList());
+
+            // 使用 Jackson 或其他 JSON 库转换
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.writeValueAsString(objects);
+        } catch (Exception e) {
+            log.error("转换 ResultSet 到 JSON 失败: {}", e.getMessage());
+            return "[]";
+        }
     }
     public GraphData getAllGraphData() {
         // 查询 100 个顶点

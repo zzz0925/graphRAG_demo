@@ -15,6 +15,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,7 +71,7 @@ public class textChunk {
         log.info("start chunk---> docId:{},path:{}",docId,path);
         ClassPathResource classPathResource=new ClassPathResource(path);
         try {
-            String txt= IoUtil.read(classPathResource.getInputStream(), StandardCharsets.UTF_8);
+            String txt= IoUtil.read(classPathResource.getInputStream(), Charset.forName("GB2312"));
             //按固定字数分割,256
             String[] lines=StrUtil.split(txt,256);
             log.info("chunk size:{}", ArrayUtil.length(lines));

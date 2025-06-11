@@ -1,5 +1,6 @@
 package com.chat.service.impl;
 
+import cn.hutool.core.text.StrBuilder;
 import com.chat.config.promptConfig;
 import com.chat.dto.ChatRequest;
 import com.chat.dto.ChatResponse;
@@ -38,6 +39,7 @@ public class ChatServiceImpl {
     private final VectorStore vectorStore;
     private final VectorStorage vectorStorage;
     private final GremlinServiceImpl gremlinServiceImpl;
+    private final ModelServiceImpl modelService;
     @Transactional
     public ChatResponse processChat(ChatRequest request) {
         if(null == request.getMessage()||null == request){
@@ -153,11 +155,11 @@ public class ChatServiceImpl {
         // 获取或创建会话
         ChatSession session = getOrCreateSession(request.getSessionId());
 
-        // 保存用户消息
+        /*// 保存用户消息
         ChatMessage userMessage = new ChatMessage();
         userMessage.setSession(session);
         userMessage.setRole("user");
-        userMessage.setContent(request.getMessage());
+        userMessage.setContent(request.getMessage());*/
         try{
             //调用模型生成查询cypher
             String queryStr = request.getMessage();
@@ -182,8 +184,25 @@ public class ChatServiceImpl {
     private String graphQuery(String query){
         try{
             log.info("模型输出的cypher:{}",query);
-            //return neo4JServiceImpl.queryGraph(query);
-            return "图谱查询成功！";
+            String prompt = promptConfig.configPrompt(promptConfig.MERGE_Gremlin, query);
+            String modelResponse = modelService.generateResponse(prompt);
+
+            if (modelResponse == null || modelResponse.trim().isEmpty()) {
+                log.warn("模型返回为空，跳过该文本块");
+            }
+
+            // 处理模型返回的 Gremlin 语句
+            List<String> gremlinStatements = GremlinProcessor.processGremlinResponse(modelResponse);
+            StrBuilder sb = new StrBuilder();
+            for (String statement : gremlinStatements) {
+                String result = gremlinServiceImpl.GremlinQuery(query);
+                sb.append(result).append("\n");
+            }
+            if (gremlinStatements.isEmpty()) {
+                log.warn("未提取到有效的 Gremlin 语句，跳过该文本块");
+
+            }
+            return sb.toString();
         }catch (Exception e) {
             log.error("图谱实体提取出错: ", e);
             return "图谱实体提取出错";
