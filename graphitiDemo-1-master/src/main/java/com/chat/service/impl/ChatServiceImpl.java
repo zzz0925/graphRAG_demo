@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime; // 原始代码使用 LocalDateTime
 import java.time.ZoneOffset; // 用于 LocalDateTime 到毫秒时间戳的转换
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors; // 用于流操作
 
 @Service
@@ -88,14 +89,16 @@ public class ChatServiceImpl {
             assistantMessage = messageRepository.save(assistantMessage);
 */
             //TODO：将该轮对话传入大模型，提取出实体和关系，并更新到neo4j数据库中
-            String query = "user: " + request.getMessage() + " assistant: " + modelResponse;
-            String prompt = promptConfig.configPrompt("MERGE",query);
-            String modelQuery = modelServiceImpl.generateResponse(prompt);
-            //提取模型输出的cypher语句
-            graphExtract(modelQuery);
-            // 异步保存到Graphiti
-            // 现在只传递会话ID，因为我们将从数据库中获取所有消息
-            saveToGraphitiAsync(session.getSessionId());
+            CompletableFuture.runAsync(()-> {
+                String query = "user: " + request.getMessage() + " assistant: " + modelResponse;
+                String prompt = promptConfig.configPrompt("MERGE", query);
+                String modelQuery = modelServiceImpl.generateResponse(prompt);
+                //提取模型输出的cypher语句
+                graphExtract(modelQuery);
+                // 异步保存到Graphiti
+                // 现在只传递会话ID，因为我们将从数据库中获取所有消息
+                saveToGraphitiAsync(session.getSessionId());
+            });
 
             return ChatResponse.success(modelResponse, session.getSessionId());
 
@@ -162,19 +165,25 @@ public class ChatServiceImpl {
         userMessage.setContent(request.getMessage());*/
         try{
             //调用模型生成查询cypher
+            long start = System.currentTimeMillis();
             String queryStr = request.getMessage();
             String queryPrompt = promptConfig.configPrompt("QUERY", queryStr);
-            String queryCypher = modelServiceImpl.generateResponse(queryPrompt);
+            String queryCypher = modelServiceImpl.generateResponse(queryPrompt);//这里输出了gremlin
+
             String graphResponse = graphQuery(queryCypher);
-            String response = "用户问题："+request.getMessage()  +"，图谱结果："+ graphResponse;
+            String response = "上下文：" + request.getMessage()  +  graphResponse;
             String generateResponse = modelServiceImpl.generateResponse(response);
 
+            long end = System.currentTimeMillis();
+            log.info("图谱查询耗时：{}ms",end-start);
             //TODO：将该轮对话传入大模型，提取出实体和关系，并更新到neo4j数据库中
-            String query = "user: " + request.getMessage() + " assistant: " + generateResponse;
-            String prompt = promptConfig.configPrompt("MERGE",query);
-            String modelQuery = modelServiceImpl.generateResponse(prompt);
-            //提取模型输出的cypher语句
-            graphExtract(modelQuery);
+            CompletableFuture.runAsync(()->{
+                String query = "user: " + request.getMessage() + " assistant: " + generateResponse;
+                String prompt = promptConfig.configPrompt("MERGE",query);
+                String modelQuery = modelServiceImpl.generateResponse(prompt);
+                graphQuery(modelQuery);
+            });
+
             return ChatResponse.success(generateResponse, session.getSessionId());
         }catch (Exception e){
             log.error("处理聊天请求时出错: ", e);
@@ -183,24 +192,15 @@ public class ChatServiceImpl {
     }
     private String graphQuery(String query){
         try{
-            log.info("模型输出的cypher:{}",query);
-            String prompt = promptConfig.configPrompt(promptConfig.MERGE_Gremlin, query);
-            String modelResponse = modelService.generateResponse(prompt);
-
-            if (modelResponse == null || modelResponse.trim().isEmpty()) {
-                log.warn("模型返回为空，跳过该文本块");
-            }
-
             // 处理模型返回的 Gremlin 语句
-            List<String> gremlinStatements = GremlinProcessor.processGremlinResponse(modelResponse);
+            List<String> gremlinStatements = GremlinProcessor.processGremlinResponse(query);
             StrBuilder sb = new StrBuilder();
             for (String statement : gremlinStatements) {
-                String result = gremlinServiceImpl.GremlinQuery(query);
+                String result = gremlinServiceImpl.GremlinQuery(statement);
                 sb.append(result).append("\n");
             }
             if (gremlinStatements.isEmpty()) {
                 log.warn("未提取到有效的 Gremlin 语句，跳过该文本块");
-
             }
             return sb.toString();
         }catch (Exception e) {

@@ -58,22 +58,25 @@ public class GremlinServiceImpl {
         return failedStatements;
     }
     public String GremlinQuery(String gremlin) {
+        long start = System.currentTimeMillis();
         ResultSet submit = gremlinClient.submit(gremlin);
-        log.info("Gremlin Query: {}", gremlin);
+        long end = System.currentTimeMillis();
+        log.info("Gremlin Query: {}, Gremlin Query Time: {} ms", gremlin,end - start);
         return resultSetToJsonString(submit);
     }
     public String resultSetToJsonString(ResultSet resultSet) {
         try {
             List<Result> results = resultSet.all().join();
-            List<Object> objects = results.stream()
-                    .map(Result::getObject)
-                    .collect(Collectors.toList());
-
-            // 使用 Jackson 或其他 JSON 库转换
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.writeValueAsString(objects);
+            List<Map<String,Object>> maps = new ArrayList<>();
+            if (!results.isEmpty()) {
+                for (Result result : results) {
+                    Map<String, Object> map = result.get(Map.class);
+                    maps.add(map);
+                }
+            }
+            return maps.toString();
         } catch (Exception e) {
-            log.error("转换 ResultSet 到 JSON 失败: {}", e.getMessage());
+            log.error("转换 ResultSet 到 string 失败: {}", e.getMessage());
             return "[]";
         }
     }
@@ -89,7 +92,7 @@ public class GremlinServiceImpl {
                 .map(this::convertGremlinMapToStandardMap)
                 .collect(Collectors.toList());
 
-        nodes.forEach(node -> vertexIds.add((String) node.get("id")));
+        nodes.forEach(node -> vertexIds.add(String.valueOf(node.get("id"))));
 
         // Step 2: 根据这些顶点 ID 查询连接的边
         String edgeQuery = String.format(
