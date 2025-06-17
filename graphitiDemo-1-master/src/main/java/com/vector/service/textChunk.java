@@ -71,7 +71,7 @@ public class textChunk {
         log.info("start chunk---> docId:{},path:{}",docId,path);
         ClassPathResource classPathResource=new ClassPathResource(path);
         try {
-            String txt= IoUtil.read(classPathResource.getInputStream(), Charset.forName("GB2312"));
+            String txt= IoUtil.read(classPathResource.getInputStream(), StandardCharsets.UTF_8);//Charset.forName("GB2312")
             //按固定字数分割,256
             String[] lines=StrUtil.split(txt,256);
             log.info("chunk size:{}", ArrayUtil.length(lines));

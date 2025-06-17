@@ -554,8 +554,8 @@ class Neo4jViz {
                 const visEdges = graphData.relationships.map(edge => {
                     return {
                         id: edge.id,
-                        from: edge.inV,
-                        to: edge.outV,
+                        from: edge.outV,
+                        to: edge.inV,
                         label: edge.label, // 将关系类型作为边的标签
                         title: JSON.stringify(edge.pros, null, 2), // 鼠标悬停时显示属性
                         arrows: 'to'

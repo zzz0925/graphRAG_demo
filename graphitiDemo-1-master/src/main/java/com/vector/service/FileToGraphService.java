@@ -54,7 +54,6 @@ public class FileToGraphService {
                     try {
                         processedChunks++;
                         log.info("处理第 {}/{} 个文本块", processedChunks, totalChunks);
-
                         // 调用模型提取实体和关系
                         String prompt = promptConfig.configPrompt(promptConfig.MERGE_Gremlin, chunk.getContent());
                         String modelResponse = modelService.generateResponse(prompt);
